@@ -9,7 +9,6 @@ export default function App() {
   const [city, setCity] = useState<string>('');
 
   const { data, isLoading, isError } = useWeather(city);
-  console.log(data);
 
   function handleSearch() {
     setCity(query);
