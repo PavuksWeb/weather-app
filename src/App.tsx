@@ -13,6 +13,7 @@ export default function App() {
 
   function handleSearch() {
     setCity(query);
+    setQuery('');
   }
 
   return (
@@ -24,7 +25,6 @@ export default function App() {
           className="bg-white rounded-3xl py-2 px-6"
           value={query}
           onChange={(e) => {
-            e.preventDefault();
             setQuery(e.target.value);
           }}
         />
