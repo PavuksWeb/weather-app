@@ -11,7 +11,7 @@ export default function useWeather(city: string) {
     queryKey: ['city', query, units],
     queryFn: async () => getWeather(query, units),
     enabled: !!city,
-    staleTime: 10 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    staleTime: import.meta.env.VITE_TTL,
+    gcTime: import.meta.env.VITE_TTL,
   });
 }

@@ -60,7 +60,9 @@ export default function Card({
           <img src={wind_icon} />
           <div className="flex flex-col">
             <span>Wind</span>
-            <p>{windSpeed} Km/h</p>
+            <p>
+              {windSpeed} {units === 'metric' ? 'm/sec' : 'mi/h'}
+            </p>
           </div>
         </div>
       </div>
