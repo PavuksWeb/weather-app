@@ -1,46 +1,78 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Card from './components/Card';
 import useWeather from './hooks/useWeather';
-import search_icon from '/search.svg?url';
 import Spinner from './components/Spinner';
+import Empty from './components/Empty';
+import SearchError from './components/SearchError';
+import { useDebounce } from './hooks/useDebounce';
+import type { CurrentWeather } from './types/currentWeather';
+import { mapToCurrentWeather } from './utils/weatherMapper';
+import { useDispatch, useSelector } from 'react-redux';
+import type { AppDispatch, RootState } from './store';
+import {
+  addLastCity,
+  addToHistory,
+  clearExpiredHistory,
+} from './store/uiSlice';
+import Favorites from './components/Favorites';
+import SearchInput from './components/SearchBar';
+import SearchHistory from './components/SearchHistory';
 
 export default function App() {
   const [query, setQuery] = useState<string>('');
   const [city, setCity] = useState<string>('');
+  const [showHistory, setShowHistory] = useState(false);
 
+  const deboucedQuery = useDebounce(query, 500);
   const { data, isLoading, isError } = useWeather(city);
 
-  function handleSearch() {
-    setCity(query);
-    setQuery('');
+  const dispatch = useDispatch<AppDispatch>();
+  const favorites = useSelector((state: RootState) => state.ui.favorites);
+
+  const currentWeather: CurrentWeather | null = data
+    ? mapToCurrentWeather(data)
+    : null;
+
+  function handleSearch(c?: string) {
+    const chosenCity = c ?? query;
+    if (chosenCity.trim()) {
+      setCity(chosenCity);
+      dispatch(addToHistory(chosenCity));
+      dispatch(addLastCity(chosenCity));
+      setShowHistory(false);
+      setQuery('');
+    }
   }
 
+  useEffect(() => {
+    dispatch(clearExpiredHistory());
+  }, [dispatch]);
+
   return (
-    <div className="bg-linear-to-r from-cyan-300 to-blue-400 min-h-screen flex flex-col items-center justify-baseline">
-      <div className="flex justify-center items-center gap-4 mt-40 mb-15">
-        <input
-          type="text"
-          placeholder="Search"
-          className="bg-white rounded-3xl py-2 px-6"
-          value={query}
-          onChange={(e) => {
-            setQuery(e.target.value);
-          }}
+    <div className="bg-linear-to-r from-cyan-300 to-blue-400 min-h-screen flex flex-col items-center justify-baseline gap-4">
+      <div className="flex flex-col relative">
+        <SearchInput
+          query={query}
+          setQuery={setQuery}
+          onSearch={handleSearch}
+          isLoading={isLoading}
+          showHistory={showHistory}
+          setShowHistory={setShowHistory}
         />
-        <button onClick={handleSearch}>
-          <img
-            src={search_icon}
-            className="bg-white p-2 rounded-4xl hover:cursor-pointer hover:bg-gray-200 transition duration-500 hover:scale-105"
-          />
-        </button>
+
+        {showHistory && query.length >= 2 && deboucedQuery && (
+          <SearchHistory query={query} onSearch={handleSearch} />
+        )}
       </div>
 
-      {!city && (
-        <p className="text-4xl text-white mt-10">To start, enter city name</p>
-      )}
+      {!showHistory && !city && <Empty />}
       {city && isLoading && <Spinner />}
-      {city && isError && <p>Searching failed</p>}
-      {city && data && <Card {...data} />}
+      {city && isError && <SearchError />}
+      {city && data && currentWeather?.city && (
+        <Card {...(currentWeather as CurrentWeather)} />
+      )}
+
+      {favorites.length > 0 && <Favorites onCityClick={handleSearch} />}
     </div>
   );
 }
